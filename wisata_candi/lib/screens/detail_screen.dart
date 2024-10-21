@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:wisata_candi/models/candi.dart';
 
 class DetailScreen extends StatelessWidget{
-  final Candi candi;
-  const DetailScreen({super.key, required this.candi});
+  const DetailScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -26,21 +24,21 @@ class DetailScreen extends StatelessWidget{
               ),
               ),
               // //tombol back kustom
-              // Padding(
-              //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32,
-              //     ),
-              //   child: Container(
-              //     decoration: BoxDecoration(
-              //       color: Colors.deepPurple[100]?.withOpacity(8.8),
-              //       shape: BoxShape.circle,
-              //     ),
-              //    child: IconButton(onPressed: () {},
-              //        icon: const Icon(
-              //          Icons.arrow_back,
-              //        ),
-              //    ),
-              // ),
-              // ),
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32,
+                  ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple[100]?.withOpacity(8.8),
+                    shape: BoxShape.circle,
+                  ),
+                 child: IconButton(onPressed: () {},
+                     icon: const Icon(
+                       Icons.arrow_back,
+                     ),
+                 ),
+              ),
+              ),
             ],
           )
 
