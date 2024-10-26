@@ -97,7 +97,6 @@ class DetailScreen extends StatelessWidget{
                     fontWeight: FontWeight.bold),),),
                 SizedBox(height: 16,),
                 Text(('${candi.description}'))
-                
                 //info bawah(deskripsi)
                 
               ],
