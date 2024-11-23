@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:wisata_candi/screens/sign_in_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -24,6 +25,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isSignedIn = false;
 
   bool _obscurePassword = true;
+  // Todo 1. Membuat fungsi _singUp
+  void _signUp(){
+    String name = _Namalengkapcontroller.text.trim();
+    String username = _usernamecontroller.text.trim();
+    String password = _passwordcontroller.text.trim();
+
+    if (password.length<8 ||
+      !password.contains(RegExp(r'[A-Z]')) ||
+      !password.contains(RegExp(r'[a-z]')) ||
+      !password.contains(RegExp(r'[0-9]')) ||
+      !password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]')));
+    print('*** Sign Up berhasil');
+    print('Nama : $name');
+    print('Nama Pengguna : $username');
+    print('Password : $password');
+
+  }
+
+  // Todo 2. Mmebuat fungsi dispose
+  @override
+  void dispose(){
+  //   Todo: Implement dispose
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return  Scaffold(
