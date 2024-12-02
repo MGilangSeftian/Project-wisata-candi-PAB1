@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 
 class SignInScreen extends StatefulWidget {
 
@@ -23,39 +24,67 @@ class _SignInScreenState extends State<SignInScreen> {
 
   bool _obscurePassword = true;
 
+
+
+  Future<Map<String, String>> _retrieveAndDecryptDataFromPrefs(
+      Future<SharedPreferences> prefs,
+      ) async {
+    final SharedPreferences = await prefs;
+    final encryptedUsername = SharedPreferences.getString('username') ?? '';
+    final encryptedpassword = SharedPreferences.getString('password') ?? '';
+    final keyString = SharedPreferences.getString('key') ?? '';
+    final ivString = SharedPreferences.getString('iv') ?? '';
+
+
+    final encrypt.Key key = encrypt.Key.fromBase64(keyString);
+    final iv = encrypt.IV.fromBase64(ivString);
+
+    final encrypter = encrypt.Encrypter(encrypt.AES(key));
+    final decryptedUsername = encrypter.decrypt64(encryptedUsername, iv : iv);
+    final decryptedPassword = encrypter.decrypt64(encryptedpassword, iv : iv);
+
+    return {'username' : decryptedUsername, 'password' : decryptedPassword};
+
+  }
+
   void _signIn() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String savedUsername = prefs.getString('username') ?? '';
-    final String savedPassword = prefs.getString('password') ?? '';
-    final String enteredUsername = _usernamecontroller.text.trim();
-    final String enteredPassword = _passwordcontroller.text.trim();
-
-    if (enteredUsername == savedUsername && enteredPassword == savedPassword){
-      setState(() {
-        _errorText = "";
-        _isSignedIn = true;
-        prefs.setBool('isSignedIn', true);
-      });
-    //   pemanggilan untuk menghapus semua halaman dalam tumpulkan navigasi
-      WidgetsBinding.instance.addPostFrameCallback((_){
-        Navigator.of(context).popUntil((route)=>route.isFirst);
-      });
-    //   sign in berhasil, navigasi ke layar utama
-      WidgetsBinding.instance.addPostFrameCallback((_){
-        Navigator.pushReplacementNamed(context, '/');
-      });
-
-    }
-    if(savedUsername.isEmpty || savedPassword.isEmpty){
-      setState(() {
-        _errorText = 'Pengguna belum terdaftar. silakan daftar terlebih dahulu';
-      });
-    }
-
-    else {
-      setState(() {
-        _errorText = 'Nama pengguna atau kata sandi salah';
-      });
+    try {
+      final Future<SharedPreferences> prefsFuture =
+      SharedPreferences.getInstance();
+      final String username = _usernamecontroller.text;
+      final String password = _passwordcontroller.text;
+      print('Sign in attempt');
+      if (username.isNotEmpty && password.isNotEmpty) {
+        final SharedPreferences prefs = await prefsFuture;
+        final data = await _retrieveAndDecryptDataFromPrefs(prefs);
+        if (data.isNotEmpty) {
+          final decryptedUsername = data['username'];
+          final decryptedPassword = data['password'];
+          if (username == decryptedUsername && password == decryptedPassword) {
+            _errorText = '';
+            _isSignedIn = true;
+            prefs.setBool('isSignedIn', true);
+// Pemanggilan untuk menghapus semua halaman dalam tumpukan navigasi
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            });
+// Sign in berhasil, navigasikan ke layar utama
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.pushReplacementNamed(context, '/');
+            });
+            print('Sign in succeeded');
+          } else {
+            print('Username or password is incorrect');
+          }
+        } else {
+          print('No stored credentials found');
+        }
+      } else {
+        print('Username and password cannot be empty');
+// Tambahkan pesan untuk kasus ketika username atau password kosong
+      }
+    } catch (e) {
+      print('An error occurred: $e');
     }
   }
 
