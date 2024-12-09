@@ -56,7 +56,7 @@ class _SignInScreenState extends State<SignInScreen> {
       print('Sign in attempt');
       if (username.isNotEmpty && password.isNotEmpty) {
         final SharedPreferences prefs = await prefsFuture;
-        final data = await _retrieveAndDecryptDataFromPrefs(prefs);
+        final data = await _retrieveAndDecryptDataFromPrefs(prefsFuture);
         if (data.isNotEmpty) {
           final decryptedUsername = data['username'];
           final decryptedPassword = data['password'];
