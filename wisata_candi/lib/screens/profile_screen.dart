@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key,});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -14,6 +19,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String userName = "";
   int favoriteCandiCount = 0;
   late Color iconColor;
+  String _imageFile = '';
+  final picker = ImagePicker();
+
+  Future<void> _saveImageToPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString('imagePath', _imageFile);
+  }
+  Future<void> _loadImageFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _imageFile = prefs.getString('imagePath') ?? '';
+    });
+  }
+
+  Future<void> _getImage(ImageSource source) async {
+    if (kIsWeb && source == ImageSource.camera) {
+      return;
+    }
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxHeight: 720,
+        maxWidth: 720,
+        imageQuality: 80,
+      );
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = pickedFile.path;
+        });
+        _saveImageToPrefs();
+      }
+}
+  void _showPicker(){
+    showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context){
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text(
+                  'Image Source',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text('Gallery'),
+                onTap: (){
+                  Navigator.of(context).pop();
+                  _getImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_camera),
+                title: Text('Camera'),
+                onTap: (){
+                  Navigator.of(context).pop();
+                  _getImage(ImageSource.camera);
+                },
+              ),
+            ],
+          );
+        });
+  }
 
   // Todo 5 Implementasi Fungsi Sign In
   void signIn(){
@@ -30,6 +99,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       isSignedIn = !isSignedIn;
     });
+  }
+
+  Future<Map<String, String>> _retrieveAndDecryptDataFromPrefs(
+      SharedPreferences prefs) async {
+    final encryptedUsername = prefs.getString('username') ?? '';
+    final encryptedName = prefs.getString('fullname') ?? '';
+    final keyString = prefs.getString('key') ?? '';
+    final ivString = prefs.getString('iv') ?? '';
+
+    if (keyString.isEmpty || ivString.isEmpty || encryptedUsername.isEmpty || encryptedName.isEmpty) {
+      throw Exception('Data terenkripsi tidak ditemukan!');
+    }
+
+    try {
+      final key = encrypt.Key.fromBase64(keyString);
+      final iv = encrypt.IV.fromBase64(ivString);
+      final encrypter = encrypt.Encrypter(encrypt.AES(key));
+      final decryptedUsername = encrypter.decrypt64(encryptedUsername, iv: iv);
+      final decryptedName = encrypter.decrypt64(encryptedName, iv: iv);
+
+      return {'username': decryptedUsername, 'fullname' : decryptedName};
+    } catch (e) {
+      return {'username': 'Gagal Dekripsi'};
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+      final data = await _retrieveAndDecryptDataFromPrefs(prefs);
+      setState(() {
+        userName = data['username'] ?? '';
+        fullName = data ['fullname'] ?? '';
+      });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+    _loadImageFromPrefs();
   }
 
   @override
@@ -61,12 +171,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           child: CircleAvatar(
                             radius: 50,
-                            backgroundImage: AssetImage('images/placeholder_image.png'),
+                            backgroundImage: _imageFile.isNotEmpty
+                                ? (kIsWeb
+                                ? NetworkImage(_imageFile)
+                                : FileImage(File(_imageFile))) as ImageProvider
+                                : AssetImage('images/placeholder_image.png'),
                           ),
                         ),
                         if (isSignedIn)
                           IconButton(
-                              onPressed: (){},
+                              onPressed: (){
+                                _showPicker();
+                              },
                               icon: Icon(Icons.camera_alt, color: Colors.deepPurple[50],),),
                       ],
                     ),
